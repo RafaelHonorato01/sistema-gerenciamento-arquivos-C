@@ -3,56 +3,56 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define MAX_CHILDREN 10
+#define NUM_FILHOS 10
 
-typedef struct Node
+typedef struct Nodo
 {
-    char name[100];
-    bool isDirectory;
-    struct Node *children[MAX_CHILDREN];
-    int childCount;
-    struct Node *parent;
-} Node;
+    char nome[100];
+    bool diretorio;
+    struct Nodo *filho[NUM_FILHOS];
+    int countFilho;
+    struct Nodo *irmao;
+} Nodo;
 
-Node *createNode(char *name, bool isDirectory, Node *parent)
+Nodo *gerarNodo(char *nome, bool diretorio, Nodo *irmao)
 {
-    Node *newNode = (Node *)malloc(sizeof(Node));
-    strcpy(newNode->name, name);
-    newNode->isDirectory = isDirectory;
-    newNode->childCount = 0;
-    newNode->parent = parent;
-    return newNode;
+    Nodo *novoNodo = (Nodo *)malloc(sizeof(Nodo));
+    strcpy(novoNodo->nome, nome);
+    novoNodo->diretorio = diretorio;
+    novoNodo->countFilho = 0;
+    novoNodo->irmao = irmao;
+    return novoNodo;
 }
 
-void showCurrentPath(Node *current)
+void exibirPastaAtual(Nodo *caminho)
 {
-    if (current->parent != NULL)
+    if (caminho->irmao != NULL)
     {
-        showCurrentPath(current->parent);
-        printf("-%s", current->name);
+        exibirPastaAtual(caminho->irmao);
+        printf("-%s", caminho->nome);
     }
 }
 
-void sortChildren(Node* current) {
-    for (int i = 0; i < current->childCount - 1; i++) {
-        for (int j = 0; j < current->childCount - i - 1; j++) {
-            if (strcasecmp(current->children[j]->name, current->children[j + 1]->name) > 0) {
-                Node* temp = current->children[j];
-                current->children[j] = current->children[j + 1];
-                current->children[j + 1] = temp;
+void sortfilho(Nodo* caminho) {
+    for (int i = 0; i < caminho->countFilho - 1; i++) {
+        for (int j = 0; j < caminho->countFilho - i - 1; j++) {
+            if (strcasecmp(caminho->filho[j]->nome, caminho->filho[j + 1]->nome) > 0) {
+                Nodo* temp = caminho->filho[j];
+                caminho->filho[j] = caminho->filho[j + 1];
+                caminho->filho[j + 1] = temp;
             }
         }
     }
 }
 
-void ls(Node *current)
+void ls(Nodo *caminho)
 {
-    sortChildren(current);
+    sortfilho(caminho);
 
-    for (int i = 0; i < current->childCount; i++)
+    for (int i = 0; i < caminho->countFilho; i++)
     {
-        printf("%s", current->children[i]->name);
-        if (current->children[i]->isDirectory)
+        printf("%s", caminho->filho[i]->nome);
+        if (caminho->filho[i]->diretorio)
         {
             printf("-");
         }
@@ -60,12 +60,12 @@ void ls(Node *current)
     }
 }
 
-void createFile(Node *current, char *fileName)
+void gerarArquivo(Nodo *caminho, char *filenome)
 {
-    if (current->childCount < MAX_CHILDREN)
+    if (caminho->countFilho < NUM_FILHOS)
     {
-        Node *newFile = createNode(fileName, false, current);
-        current->children[current->childCount++] = newFile;
+        Nodo *novoArquivo = gerarNodo(filenome, false, caminho);
+        caminho->filho[caminho->countFilho++] = novoArquivo;
     }
     else
     {
@@ -73,12 +73,12 @@ void createFile(Node *current, char *fileName)
     }
 }
 
-void createFolder(Node *current, char *folderName)
+void gerarPasta(Nodo *caminho, char *nomePasta)
 {
-    if (current->childCount < MAX_CHILDREN)
+    if (caminho->countFilho < NUM_FILHOS)
     {
-        Node *newFolder = createNode(folderName, true, current);
-        current->children[current->childCount++] = newFolder;
+        Nodo *novaPasta = gerarNodo(nomePasta, true, caminho);
+        caminho->filho[caminho->countFilho++] = novaPasta;
     }
     else
     {
@@ -86,13 +86,13 @@ void createFolder(Node *current, char *folderName)
     }
 }
 
-Node *changeDirectory(Node *current, char *folderName)
+Nodo *buscarDiretorio(Nodo *caminho, char *nomePasta)
 {
-    if (strcmp(folderName, "..") == 0)
+    if (strcmp(nomePasta, "..") == 0)
     {
-        if (current->parent != NULL)
+        if (caminho->irmao != NULL)
         {
-            return current->parent;
+            return caminho->irmao;
         }
         else
         {
@@ -101,57 +101,57 @@ Node *changeDirectory(Node *current, char *folderName)
     }
     else
     {
-        for (int i = 0; i < current->childCount; i++)
+        for (int i = 0; i < caminho->countFilho; i++)
         {
-            if (current->children[i]->isDirectory && strcmp(current->children[i]->name, folderName) == 0)
+            if (caminho->filho[i]->diretorio && strcmp(caminho->filho[i]->nome, nomePasta) == 0)
             {
-                return current->children[i];
+                return caminho->filho[i];
             }
         }
         printf("comando invalido\n");
     }
-    return current;
+    return caminho;
 }
 
-void removeNode(Node *current, char *name)
+void excluirNodo(Nodo *caminho, char *nome)
 {
-    int found = -1;
-    for (int i = 0; i < current->childCount; i++)
+    int x = -1;
+    for (int i = 0; i < caminho->countFilho; i++)
     {
-        if (strcmp(current->children[i]->name, name) == 0)
+        if (strcmp(caminho->filho[i]->nome, nome) == 0)
         {
-            found = i;
+            x = i;
             break;
         }
     }
 
-    if (found == -1)
+    if (x == -1)
     {
         printf("comando invalido\n");
         return;
     }
 
-    Node *toDelete = current->children[found];
+    Nodo *deletar = caminho->filho[x];
 
-    if (toDelete->isDirectory)
+    if (deletar->diretorio)
     {
-        for (int i = 0; i < toDelete->childCount; i++)
+        for (int i = 0; i < deletar->countFilho; i++)
         {
-            free(toDelete->children[i]);
+            free(deletar->filho[i]);
         }
     }
 
-    for (int i = found; i < current->childCount - 1; i++)
+    for (int i = x; i < caminho->countFilho - 1; i++)
     {
-        current->children[i] = current->children[i + 1];
+        caminho->filho[i] = caminho->filho[i + 1];
     }
 
-    current->childCount--;
+    caminho->countFilho--;
 
-    free(toDelete);
+    free(deletar);
 }
 
-void exitProgram()
+void encerrar()
 {
     printf("sistema encerrado\n");
     exit(0);
@@ -159,43 +159,43 @@ void exitProgram()
 
 int main()
 {
-    Node *root = createNode("root", true, NULL);
-    Node *current = root;
-    char command[100], arg[100];
+    Nodo *raiz = gerarNodo("raiz", true, NULL);
+    Nodo *caminho = raiz;
+    char acao[100], arg[100];
 
     while (true)
     {
-        showCurrentPath(current);
+        exibirPastaAtual(caminho);
         printf("->");
-        scanf("%s", command);
+        scanf("%s", acao);
 
-        if (strcmp(command, "ls") == 0)
+        if (strcmp(acao, "ls") == 0)
         {
-            ls(current);
+            ls(caminho);
         }
-        else if (strcmp(command, "ma") == 0)
+        else if (strcmp(acao, "ma") == 0)
         {
             scanf("%s", arg);
-            createFile(current, arg);
+            gerarArquivo(caminho, arg);
         }
-        else if (strcmp(command, "mp") == 0)
+        else if (strcmp(acao, "mp") == 0)
         {
             scanf("%s", arg);
-            createFolder(current, arg);
+            gerarPasta(caminho, arg);
         }
-        else if (strcmp(command, "cd") == 0)
+        else if (strcmp(acao, "cd") == 0)
         {
             scanf("%s", arg);
-            current = changeDirectory(current, arg);
+            caminho = buscarDiretorio(caminho, arg);
         }
-        else if (strcmp(command, "rm") == 0)
+        else if (strcmp(acao, "rm") == 0)
         {
             scanf("%s", arg);
-            removeNode(current, arg);
+            excluirNodo(caminho, arg);
         }
-        else if (strcmp(command, "ex") == 0)
+        else if (strcmp(acao, "ex") == 0)
         {
-            exitProgram();
+            encerrar();
         }
         else
         {
